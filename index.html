@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Last Ember — Co-op Horror</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Creepster&family=Special+Elite&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="grain"></div>
+<div id="vignette"></div>
+<div id="danger"></div>
+
+<!-- ============ MENU ============ -->
+<div id="menu" class="screen show">
+  <div class="menu-box">
+    <h1 class="title">LAST EMBER</h1>
+    <p class="sub">co-op horror · 1–4 players · v<span class="ver"></span></p>
+
+    <label class="lbl">Your name</label>
+    <input id="nameInput" maxlength="12" placeholder="Survivor" autocomplete="off">
+
+    <label class="lbl">Mode</label>
+    <div class="modes">
+      <button class="mode-btn sel" data-mode="normal"><b>NORMAL</b><small>8 parts · the forest sleeps until you take the first part · revive friends within 60s · wood keeps spawning</small></button>
+      <button class="mode-btn" data-mode="hard"><b>HARD</b><small>10 parts · death is permanent · scarce wood · monsters hunt in packs &amp; remember you</small></button>
+    </div>
+
+    <div class="row">
+      <button id="btnSolo" class="big">PLAY SOLO</button>
+      <button id="btnHost" class="big">HOST ONLINE</button>
+    </div>
+    <div class="row">
+      <input id="codeInput" maxlength="5" placeholder="ROOM CODE" autocomplete="off">
+      <button id="btnJoin" class="big">JOIN</button>
+    </div>
+    <p id="menuMsg" class="msg"></p>
+
+    <details class="howto">
+      <summary>How to survive</summary>
+      <ul>
+        <li>Find the car parts hidden in the dark forest and bring them to the <b>car</b> beside the bonfire.</li>
+        <li>Feed the <b>bonfire</b> with wood. Smaller fire = smaller safe circle. If it dies, everyone dies.</li>
+        <li>Monsters can't enter the firelight. Outside it they roam, hunt, search, and cut off your way back.</li>
+        <li>Light a wood as a <b>torch</b> at the fire to see further — but they see you from far away too.</li>
+        <li><b>Normal:</b> nothing hunts you until someone picks up the first car part. Then it wakes up.</li>
+        <li>Monsters: <b>Crawler</b> (fast) · <b>Weeper</b> (freezes while you look at it) · <b>Antlered</b> (huge, turns slowly, so zig-zag) · <b>Mimic</b> (looks and talks like a teammate, but has no colored ring) · <b>Many-Eyes</b> (sees far, calls the others).</li>
+        <li><b>Running</b> makes noise. Each player holds <b>2 items</b> (wood or part).</li>
+        <li>You can only <b>chat</b> while standing in the firelight.</li>
+      </ul>
+      <p class="keys"><b>PC:</b> WASD move · Shift run · E use / pick up / throw wood / revive (hold) · F torch · G drop · 1/2 select slot · Enter chat · Space next spectate<br>
+      <b>Phone:</b> left stick to move, buttons on the right.</p>
+    </details>
+    <button id="btnMute" class="small">🔊 Sound on</button>
+  </div>
+</div>
+
+<!-- ============ LOBBY ============ -->
+<div id="lobby" class="screen">
+  <div class="menu-box">
+    <h2 class="title2">CAMP</h2>
+    <p class="lbl">Room code — share it with friends</p>
+    <div id="roomCode" class="code">-----</div>
+    <button id="btnCopy" class="small">Copy code</button>
+    <p class="lbl">Mode: <b id="lobbyMode">Normal</b></p>
+    <ul id="lobbyList"></ul>
+    <p id="lobbyMsg" class="msg"></p>
+    <div class="row">
+      <button id="btnStart" class="big">LIGHT THE FIRE</button>
+      <button id="btnLeave" class="big ghost">LEAVE</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ HUD ============ -->
+<div id="hud" class="hidden">
+  <div id="firePanel">
+    <div class="fire-lbl">🔥 BONFIRE <span id="firePct">100%</span></div>
+    <div class="bar"><div id="fireBar"></div></div>
+    <div class="fire-lbl small-l">⏱ <span id="clock">0:00</span> · <span id="modeTag">NORMAL</span></div>
+  </div>
+  <div id="matPanel"><div class="mat-head">🚗 CAR PARTS <span id="matCount">0/8</span></div><div id="matList"></div></div>
+  <div id="teamPanel"></div>
+  <div id="centerMsg"></div>
+  <div id="eventMsg"></div>
+  <div id="prompt"></div>
+  <div id="specLabel" class="hidden"></div>
+  <div id="bottomBar">
+    <div id="slots"><div class="slot" data-i="0"></div><div class="slot" data-i="1"></div></div>
+    <div class="bar stam"><div id="stamBar"></div></div>
+  </div>
+  <div id="chat">
+    <div id="chatLog"></div>
+    <form id="chatForm"><input id="chatInput" maxlength="80" autocomplete="off" placeholder="Return to the fire to speak..."></form>
+  </div>
+  <button id="btnMenuIG" class="small top-btn">☰</button>
+  <!-- phone controls -->
+  <div id="touch" class="hidden">
+    <div id="stickZone"><div id="stickBase"><div id="stickKnob"></div></div></div>
+    <div id="tButtons">
+      <button class="tb" id="tbUse">USE</button>
+      <button class="tb" id="tbTorch">🔥</button>
+      <button class="tb" id="tbRun">RUN</button>
+      <button class="tb sm" id="tbDrop">DROP</button>
+      <button class="tb sm" id="tbChat">💬</button>
+    </div>
+  </div>
+</div>
+
+<div id="pauseMenu" class="screen">
+  <div class="menu-box">
+    <h2 class="title2">PAUSED?</h2>
+    <p class="msg">The forest does not pause.</p>
+    <div class="row"><button id="btnResume" class="big">BACK</button><button id="btnQuit" class="big ghost">QUIT TO MENU</button></div>
+  </div>
+</div>
+
+<!-- ============ ENDING ============ -->
+<div id="ending" class="screen">
+  <div class="end-box">
+    <div id="endTag" class="end-tag"></div>
+    <h2 id="endTitle" class="end-title"></h2>
+    <p id="endText" class="end-text"></p>
+    <p id="endStats" class="end-stats"></p>
+    <button id="btnEndMenu" class="big">BACK TO MENU</button>
+  </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/net.js"></script>
+<script src="js/monsters.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
